@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expressbus-Planer Nürnberg</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #1c2430; --muted: #5f6b7a; --line: #e2e6eb;
+  --accent: #c8102e; --accent-soft: #fbe9ec; --good: #1f7a4d; --good-soft: #e5f4ec; --warn: #a15c00;
+  --x1: #c8102e; --x2: #1d4ed8; --x3: #7c3aed; --x4: #0f766e;
+  --radius: 10px; --gap: 14px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+header { display: flex; align-items: baseline; gap: 16px; padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+header h1 { font-size: 18px; margin: 0; }
+header .sub { color: var(--muted); font-size: 12.5px; }
+header .pill { margin-left: auto; font-size: 12px; padding: 3px 10px; border-radius: 99px; background: var(--bg); color: var(--muted); }
+header .pill.on { background: var(--good-soft); color: var(--good); }
+main { display: grid; grid-template-columns: 330px minmax(0, 1fr) 360px; gap: var(--gap); padding: var(--gap); align-items: start; }
+@media (max-width: 1250px) { main { grid-template-columns: 330px minmax(0, 1fr); } #chat { grid-column: 1 / -1; } }
+@media (max-width: 800px) { main { grid-template-columns: 1fr; padding: 10px; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.card + .card { margin-top: var(--gap); }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+label.preset { display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+label.preset:hover { border-color: #c5ccd5; }
+label.preset b { display: inline-flex; align-items: center; gap: 6px; }
+label.preset small { grid-column: 2; color: var(--muted); }
+.swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.row label { color: var(--muted); font-size: 12.5px; }
+input[type=text], input[type=number], select, textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); }
+textarea { width: 100%; resize: vertical; }
+.toggle { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+.toggle small { display: block; color: var(--muted); }
+button { font: inherit; border: 0; border-radius: 8px; padding: 9px 14px; cursor: pointer; background: var(--ink); color: #fff; }
+button.primary { background: var(--accent); width: 100%; font-weight: 600; }
+button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 5px 10px; }
+button:disabled { opacity: .55; cursor: progress; }
+.tiles { filter: grayscale(1) contrast(.9) brightness(1.05); }
+#map { height: 430px; border-radius: var(--radius); border: 1px solid var(--line); }
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); margin-top: var(--gap); }
+@media (max-width: 800px) { .kpis { grid-template-columns: 1fr; } }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+.kpi .lab { color: var(--muted); font-size: 12.5px; }
+.kpi .val { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kpi .det { color: var(--muted); font-size: 12.5px; }
+.kpi.best { border-color: var(--good); background: var(--good-soft); }
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); margin-top: var(--gap); }
+@media (max-width: 1000px) { .charts { grid-template-columns: 1fr; } }
+.chartbox { position: relative; height: 260px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; white-space: normal; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; }
+td .d { color: var(--muted); font-size: 12px; margin-left: 4px; }
+.tablewrap { overflow-x: auto; }
+.note { color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+.empty { color: var(--muted); padding: 30px 0; text-align: center; }
+.spinner { display: none; align-items: center; gap: 10px; color: var(--muted); margin-top: 10px; }
+.spinner.on { display: flex; }
+.spinner i { width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#chat { position: sticky; top: var(--gap); display: flex; flex-direction: column; max-height: calc(100vh - 90px); }
+#msgs { flex: 1; overflow-y: auto; min-height: 200px; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+.msg { padding: 9px 12px; border-radius: 10px; white-space: pre-wrap; }
+.msg.user { background: var(--ink); color: #fff; align-self: flex-end; max-width: 90%; }
+.msg.bot { background: var(--bg); border: 1px solid var(--line); }
+.msg.err { background: var(--accent-soft); color: var(--accent); }
+#chatform { display: flex; gap: 8px; margin-top: 10px; }
+#chatform textarea { flex: 1; min-height: 44px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chips button { background: var(--bg); color: var(--ink); border: 1px solid var(--line); padding: 4px 9px; font-size: 12.5px; }
+.err-banner { background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 8px 10px; margin-top: 10px; display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Expressbus-Planer Nürnberg</h1>
+  <span class="sub" id="sub">Daten werden geladen …</span>
+  <span class="pill" id="claudeStatus">Claude: prüfe …</span>
+</header>
+
+<main>
+  <!-- Szenario-Baukasten -->
+  <section>
+    <div class="card">
+      <h2>Expresslinien</h2>
+      <div id="presets"></div>
+      <details>
+        <summary style="cursor:pointer;margin:4px 0 8px">Eigene Expresslinie</summary>
+        <div class="row"><label>Name</label><input type="text" id="cName" value="X1" size="6"></div>
+        <label class="row" style="margin-bottom:4px">Halte (eine pro Zeile)</label>
+        <textarea id="cStops" rows="4" placeholder="Fürth Hauptbahnhof&#10;Nordwestring&#10;Nordostbahnhof&#10;Nordostpark"></textarea>
+        <div class="row" style="margin-top:6px">
+          <input type="text" id="cAdd" list="stopNames" placeholder="Haltestelle suchen …" style="flex:1">
+          <button class="ghost" id="cAddBtn" type="button">+</button>
+        </div>
+        <div class="row">
+          <label>Takt</label>
+          <select id="cHeadway"><option>10</option><option>15</option><option selected>20</option><option>30</option></select>
+          <label>min</label>
+          <select id="cPeriods">
+            <option value="day">ganztags 06–20 Uhr</option>
+            <option value="hvz">nur Spitzen 06–09, 15–19 Uhr</option>
+            <option value="long">lang 05–23 Uhr</option>
+          </select>
+        </div>
+        <label class="toggle"><input type="checkbox" id="cOn"> <span>Eigene Linie mitrechnen</span></label>
+      </details>
+      <datalist id="stopNames"></datalist>
+    </div>
+
+    <div class="card">
+      <h2>Hebel</h2>
+      <label class="toggle"><input type="checkbox" id="lInter" checked><span>Linienübergreifende Umläufe<small>Busse dürfen zwischen Linien wechseln</small></span></label>
+      <label class="toggle"><input type="checkbox" id="lSplit" checked><span>Geteilte Dienste<small>Früh- und Spätspitze mit einem Fahrer, lange Mittagspause</small></span></label>
+      <label class="toggle"><input type="checkbox" id="lThin"><span>Parallellinien ausdünnen<small>In der Nebenverkehrszeit fällt jede zweite Fahrt weg</small></span></label>
+      <div class="row"><label>Fahrer je Tagesdienst</label><input type="number" id="lFte" value="1.7" step="0.05" min="1" max="2.5" style="width:80px"></div>
+      <button class="primary" id="runBtn">Szenario rechnen</button>
+      <div class="spinner" id="spin"><i></i><span>Optimierer plant Umläufe und Dienste … (ca. 30–60 s)</span></div>
+      <div class="err-banner" id="err"></div>
+    </div>
+  </section>
+
+  <!-- Karte und Ergebnisse -->
+  <section>
+    <div id="map"></div>
+    <div class="kpis" id="kpis">
+      <div class="kpi"><div class="lab">Zusätzliche Fahrer: Expresslinie getrennt geplant</div><div class="val">–</div><div class="det">eigene Busse, eigene Dienste</div></div>
+      <div class="kpi"><div class="lab">Zusätzliche Fahrer: integriert optimiert</div><div class="val">–</div><div class="det">gegenüber gleich optimiertem Bestand</div></div>
+      <div class="kpi"><div class="lab">Zusätzliche Fahrer: + Parallellinien ausgedünnt</div><div class="val">–</div><div class="det">Hebel „Parallellinien ausdünnen“ aktivieren</div></div>
+    </div>
+    <div class="charts">
+      <div class="card"><h2>Fahrerbedarf je Schritt</h2><div class="chartbox"><canvas id="cSteps"></canvas></div></div>
+      <div class="card"><h2>Fahrer am Steuer über den Tag</h2><div class="chartbox"><canvas id="cProfile"></canvas></div></div>
+    </div>
+    <div class="card" style="margin-top:var(--gap)">
+      <h2>Treppe: vom heutigen Betrieb zum Szenario</h2>
+      <div class="tablewrap" id="table"><div class="empty">Expresslinie wählen und „Szenario rechnen“ klicken.</div></div>
+      <div class="note" id="note"></div>
+    </div>
+  </section>
+
+  <!-- Claude -->
+  <aside class="card" id="chat">
+    <h2>Claude fragen</h2>
+    <div class="chips" id="chips">
+      <button>Was kostet X30 an Fahrern, und wie bekommen wir das mit dem vorhandenen Personal hin?</button>
+      <button>Welche Expresslinie bringt am meisten Angebot pro zusätzlichem Fahrer?</button>
+      <button>Lohnt sich ein Express nur in der Hauptverkehrszeit?</button>
+    </div>
+    <div id="msgs"></div>
+    <form id="chatform">
+      <textarea id="chatIn" placeholder="Was wäre, wenn …"></textarea>
+      <button type="submit" id="chatBtn">Senden</button>
+    </form>
+  </aside>
+</main>
+
+<script>
+const COLORS = ["#c8102e", "#1d4ed8", "#7c3aed", "#0f766e", "#b45309"];
+const PERIODS = { day: [["06:00", "20:00"]], hvz: [["06:00", "09:00"], ["15:00", "19:00"]], long: [["05:00", "23:00"]] };
+const $ = (id) => document.getElementById(id);
+const fmt = (v, d = 0) => v == null ? "–" : Number(v).toLocaleString("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d });
+const sign = (v, d = 0) => (v > 0 ? "+" : v < 0 ? "−" : "±") + fmt(Math.abs(v), d);
+
+let presets = [], chatSession = null, charts = {};
+
+// ---------- Karte
+const map = L.map("map", { zoomControl: true }).setView([49.45, 11.08], 12);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "&copy; OpenStreetMap-Mitwirkende | Fahrplan: VGN (CC BY 3.0 DE)", maxZoom: 19, className: "tiles",
+}).addTo(map);
+const netLayer = L.layerGroup().addTo(map);
+const xLayer = L.layerGroup().addTo(map);
+
+fetch("/api/network").then(r => r.json()).then(gj => {
+  L.geoJSON(gj, {
+    style: { color: "#3b6ea8", weight: 2, opacity: 0.45 },
+    onEachFeature: (f, l) => l.bindTooltip("Linie " + f.properties.line, { sticky: true }),
+  }).addTo(netLayer);
+});
+
+function drawExpress(lines) {
+  xLayer.clearLayers();
+  const bounds = [];
+  lines.forEach((x, i) => {
+    const c = COLORS[i % COLORS.length];
+    const ll = x.stations.map(s => [s.lat, s.lon]);
+    bounds.push(...ll);
+    L.polyline(ll, { color: "#fff", weight: 9, opacity: 0.9 }).addTo(xLayer);
+    L.polyline(ll, { color: c, weight: 5 }).addTo(xLayer)
+      .bindTooltip(`${x.name}: ${x.fahrzeit_min} min, alle ${x.headway} min`, { sticky: true });
+    x.stations.forEach(s => L.circleMarker([s.lat, s.lon], { radius: 6, color: c, weight: 3, fillColor: "#fff", fillOpacity: 1 })
+      .bindTooltip(s.name.replace(/^Nürnb(erg|\.)?,?\s*/, ""), { permanent: false }).addTo(xLayer));
+  });
+  if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
+}
+
+// ---------- Stammdaten
+fetch("/api/meta").then(r => r.json()).then(m => {
+  presets = m.presets;
+  $("sub").textContent = `${m.meta.scope} · Stichtag ${m.meta.service_day.replace(/(\d{4})(\d\d)(\d\d)/, "$3.$2.$1")} · ${fmt(m.meta.trips)} Fahrten, ${m.meta.lines} Linien · Quelle: VGN GTFS, CC BY 3.0 DE`;
+  $("presets").innerHTML = presets.map((p, i) => `
+    <label class="preset"><input type="checkbox" value="${p.name}" ${i === 1 ? "checked" : ""}>
+      <b><span class="swatch" style="background:${COLORS[i % COLORS.length]}"></span>${p.name} · alle ${p.headway} min · ${p.info.fahrzeit_min} min Fahrzeit</b>
+      <small>${p.description}</small></label>`).join("");
+  $("presets").addEventListener("change", previewSelection);
+  $("stopNames").innerHTML = m.stop_names.map(n => `<option value="${n}">`).join("");
+  $("claudeStatus").textContent = m.claude ? "Claude: verbunden" : "Claude: kein API-Key";
+  $("claudeStatus").classList.toggle("on", m.claude);
+  previewSelection();
+});
+
+function previewSelection() {
+  const sel = [...document.querySelectorAll("#presets input:checked")].map(i => i.value);
+  drawExpress(presets.filter(p => sel.includes(p.name)).map(p => p.info));
+}
+
+$("cAddBtn").onclick = () => {
+  const v = $("cAdd").value.trim();
+  if (!v) return;
+  $("cStops").value = ($("cStops").value.trim() + "\n" + v).trim();
+  $("cAdd").value = "";
+  $("cOn").checked = true;
+};
+
+// ---------- Szenario rechnen
+function request() {
+  const req = {
+    presets: [...document.querySelectorAll("#presets input:checked")].map(i => i.value),
+    express_lines: [],
+    interlining: $("lInter").checked,
+    split_duties: $("lSplit").checked,
+    thin_parallel: $("lThin").checked,
+    fte_per_duty: parseFloat($("lFte").value) || 1.7,
+  };
+  const stops = $("cStops").value.split("\n").map(s => s.trim()).filter(Boolean);
+  if ($("cOn").checked && stops.length >= 2) {
+    req.express_lines.push({ name: $("cName").value || "X1", stops, headway: parseInt($("cHeadway").value), periods: PERIODS[$("cPeriods").value] });
+  }
+  return req;
+}
+
+$("runBtn").onclick = async () => {
+  $("err").style.display = "none";
+  $("runBtn").disabled = true; $("spin").classList.add("on");
+  try {
+    const r = await fetch("/api/scenario", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request()) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.detail || "Fehler");
+    render(j);
+  } catch (e) {
+    $("err").textContent = e.message; $("err").style.display = "block";
+  } finally {
+    $("runBtn").disabled = false; $("spin").classList.remove("on");
+  }
+};
+
+function render(res) {
+  drawExpress(res.express);
+  const fte = res.params.fte_per_duty;
+  const g = res.grenzkosten;
+  const cards = [g.getrennt, g.optimiert, g.optimiert_mit_ausduennung];
+  const vals = cards.map(c => c ? c.delta.fahrer_bedarf : null);
+  const best = Math.min(...vals.filter(v => v != null));
+  $("kpis").querySelectorAll(".kpi").forEach((el, i) => {
+    const c = cards[i];
+    el.classList.toggle("best", c != null && vals[i] === best && cards.filter(Boolean).length > 1);
+    el.querySelector(".val").textContent = c ? sign(c.delta.fahrer_bedarf, 0) : "–";
+    if (c) el.querySelector(".det").textContent =
+      `${sign(c.delta.dienste)} Dienste · ${sign(c.delta.fahrzeuge)} Busse · ${sign(c.delta.fahrplan_km)} Fahrplan-km`;
+  });
+
+  // Treppe
+  const steps = res.steps;
+  const rows = steps.map(s => `<tr><td><b>${s.schritt}</b><br><small style="color:var(--muted)">${s.erklaerung}</small></td>
+    <td>${fmt(s.kpi.fahrplan_km)}<span class="d">${s.delta.fahrplan_km ? sign(s.delta.fahrplan_km) : ""}</span></td>
+    <td>${fmt(s.kpi.fahrzeuge)}<span class="d">${s.delta.fahrzeuge ? sign(s.delta.fahrzeuge) : ""}</span></td>
+    <td>${fmt(s.kpi.dienste)}<span class="d">${s.delta.dienste ? sign(s.delta.dienste) : ""}</span></td>
+    <td><b>${fmt(s.kpi.fahrer_bedarf)}</b><span class="d">${s.delta.fahrer_bedarf ? sign(s.delta.fahrer_bedarf) : ""}</span></td>
+    <td>${fmt(s.kpi.produktivitaet * 100)} %</td></tr>`).join("");
+  $("table").innerHTML = `<table><thead><tr><th>Schritt</th><th>Fahrplan-km</th><th>Busse</th><th>Dienste</th><th>Fahrer</th><th>Produktivität</th></tr></thead><tbody>${rows}</tbody></table>`;
+  $("note").textContent = `${res.hinweis} Fahrer = Dienste × ${String(fte).replace(".", ",")}. Produktivität = Fahrplanstunden ÷ bezahlte Arbeitsstunden.`;
+
+  // Diagramme
+  Object.values(charts).forEach(c => c.destroy());
+  charts.steps = new Chart($("cSteps"), {
+    type: "bar",
+    data: { labels: steps.map(s => s.schritt.replace(/^\+ /, "+ ").split(", ")), datasets: [{ data: steps.map(s => s.kpi.fahrer_bedarf),
+      backgroundColor: steps.map((s, i) => i === 0 ? "#8a94a3" : s.delta.fahrer_bedarf > 0 ? "#c8102e" : "#1f7a4d"), borderRadius: 4 }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: c => `${fmt(c.raw)} Fahrer (${sign(steps[c.dataIndex].delta.fahrer_bedarf)})` } } },
+      scales: { y: { beginAtZero: false, title: { display: true, text: "Fahrer" } }, x: { ticks: { font: { size: 10 } } } } },
+  });
+  const first = steps[0], last = steps[steps.length - 1];
+  charts.profile = new Chart($("cProfile"), {
+    type: "line",
+    data: { labels: first.profil.t, datasets: [
+      { label: first.schritt, data: first.profil.fahrer, borderColor: "#8a94a3", pointRadius: 0, borderWidth: 2 },
+      { label: "Szenario (" + last.schritt.replace(/^\+ /, "") + ")", data: last.profil.fahrer, borderColor: "#c8102e", pointRadius: 0, borderWidth: 2 },
+    ] },
+    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } } },
+      scales: { x: { ticks: { maxTicksLimit: 12 } }, y: { title: { display: true, text: "Fahrer am Steuer" } } } },
+  });
+}
+
+// ---------- Chat
+function addMsg(text, cls) {
+  const d = document.createElement("div");
+  d.className = "msg " + cls; d.textContent = text;
+  $("msgs").appendChild(d); $("msgs").scrollTop = $("msgs").scrollHeight;
+  return d;
+}
+async function ask(q) {
+  if (!q.trim()) return;
+  addMsg(q, "user");
+  const wait = addMsg("Claude denkt nach und rechnet ggf. Szenarien …", "bot");
+  $("chatBtn").disabled = true;
+  try {
+    const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: chatSession, message: q }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.detail || "Fehler");
+    chatSession = j.session_id;
+    wait.textContent = j.answer;
+    if (j.scenario) render(j.scenario);
+  } catch (e) {
+    wait.className = "msg err"; wait.textContent = e.message;
+  } finally { $("chatBtn").disabled = false; }
+}
+$("chatform").onsubmit = (e) => { e.preventDefault(); const q = $("chatIn").value; $("chatIn").value = ""; ask(q); };
+$("chatIn").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("chatform").requestSubmit(); } });
+$("chips").addEventListener("click", e => { if (e.target.tagName === "BUTTON") ask(e.target.textContent); });
+</script>
+</body>
+</html>

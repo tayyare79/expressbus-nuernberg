@@ -1,0 +1,14 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Rohdaten (164 MB) – neu laden mit: curl -L -o data/raw/vgn_gtfs.zip https://www.vgn.de/opendata/GTFS.zip
+data/raw/
+.DS_Store

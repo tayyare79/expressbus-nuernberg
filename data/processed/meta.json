@@ -1,0 +1,10 @@
+{
+  "service_day": "20261005",
+  "source": "VGN GTFS (www.vgn.de/opendata/GTFS.zip), CC BY 3.0 DE – VGN – Verkehrsverbund Großraum Nürnberg GmbH",
+  "scope": "VAG-Stadtbus Nürnberg (ohne Rufbus/Linientaxi, ohne NightLiner)",
+  "trips": 4854,
+  "lines": 53,
+  "stops": 1306,
+  "fahrplan_km": 40379.0,
+  "fahrplan_stunden": 2222.3
+}
