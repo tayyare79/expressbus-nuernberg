@@ -3,8 +3,9 @@ name = "expressbus"
 version = "0.1.0"
 description = "Expressbusse trotz Fahrermangel – Umlauf- und Dienstplanungs-Prototyp (Claude Code Impact Lab Nürnberg, Track 1)"
 authors = [
-    { name = "Harun Nakas", email = "harunnakas@gmail.com" }
+    { name = "Harun Nakas" }
 ]
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "anthropic>=1.11.0",

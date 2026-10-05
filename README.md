@@ -76,4 +76,6 @@ Fahrplanstunden, aber wenig Dienste. Expressfahrten außerhalb der Spitze sind f
 6. Wochenende und Ferien: weitere Stichtage rechnen.
 
 Daten: VGN – Verkehrsverbund Großraum Nürnberg GmbH, Soll-Fahrplandaten (GTFS), CC BY 3.0 DE.
+
+Code: MIT-Lizenz, siehe [LICENSE](LICENSE). Die VGN-Daten in `data/processed/` stehen weiter unter CC BY 3.0 DE.
 Karte: © OpenStreetMap-Mitwirkende.
