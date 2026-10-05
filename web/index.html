@@ -105,6 +105,11 @@ td .d { color: var(--muted); font-size: 12px; margin-left: 4px; }
 .chips button:nth-child(2) { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
 .chips button:nth-child(3) { background: #f0fdfa; color: #115e59; border-color: #99f6e4; }
 .chips button:hover { transform: translateY(-1px); }
+.step { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--ca); color: #fff; font-size: 12px; margin-right: 6px; letter-spacing: 0; }
+.kpi .val small { font-size: 14px; font-weight: 700; margin-left: 4px; }
+.question { font-size: 22px; font-weight: 800; margin: 0 0 var(--gap); color: var(--ink); }
+.question span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+details.more summary { color: #92400e; font-weight: 700; }
 .err-banner { background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 8px 10px; margin-top: 10px; display: none; }
 </style>
 </head>
@@ -119,7 +124,7 @@ td .d { color: var(--muted); font-size: 12px; margin-left: 4px; }
   <!-- Szenario-Baukasten -->
   <section>
     <div class="card">
-      <h2>Expresslinien</h2>
+      <h2><span class="step">1</span>Expresslinie wählen</h2>
       <div id="presets"></div>
       <details>
         <summary style="cursor:pointer;margin:4px 0 8px">Eigene Expresslinie</summary>
@@ -146,43 +151,46 @@ td .d { color: var(--muted); font-size: 12px; margin-left: 4px; }
     </div>
 
     <div class="card">
-      <h2>Hebel</h2>
-      <label class="toggle"><input type="checkbox" id="lInter" checked><span>Linienübergreifende Umläufe<small>Busse dürfen zwischen Linien wechseln</small></span></label>
-      <label class="toggle"><input type="checkbox" id="lSplit" checked><span>Geteilte Dienste<small>Früh- und Spätspitze mit einem Fahrer, lange Mittagspause</small></span></label>
-      <label class="toggle"><input type="checkbox" id="lThin"><span>Parallellinien ausdünnen<small>In der Nebenverkehrszeit fällt jede zweite Fahrt weg</small></span></label>
-      <div class="row"><label>Fahrer je Tagesdienst</label><input type="number" id="lFte" value="1.7" step="0.05" min="1" max="2.5" style="width:80px"></div>
-      <button class="primary" id="runBtn">Szenario rechnen</button>
-      <div class="spinner" id="spin"><i></i><span>Optimierer plant Umläufe und Dienste … (ca. 30–60 s)</span></div>
+      <h2><span class="step">2</span>Stellschrauben</h2>
+      <label class="toggle" title="Linienübergreifende Umläufe: Busse dürfen zwischen Linien wechseln"><input type="checkbox" id="lInter" checked><span>🔄 Busse wechseln die Linie</span></label>
+      <label class="toggle" title="Geteilte Dienste: Früh- und Spätspitze mit einem Fahrer, lange Mittagspause"><input type="checkbox" id="lSplit" checked><span>☕ Geteilte Dienste</span></label>
+      <label class="toggle" title="Parallellinien ausdünnen: In der Nebenverkehrszeit fällt auf parallelen Linien jede zweite Fahrt weg"><input type="checkbox" id="lThin"><span>✂️ Parallellinien ausdünnen</span></label>
+      <div class="row"><label title="Fahrer je täglichem Dienst (7-Tage-Betrieb, Urlaub, Krankheit)">Fahrer pro Dienst</label><input type="number" id="lFte" value="1.7" step="0.05" min="1" max="2.5" style="width:80px"></div>
+      <button class="primary" id="runBtn">3 · Fahrer berechnen</button>
+      <div class="spinner" id="spin"><i></i><span>Rechne … ca. 30–60 s</span></div>
       <div class="err-banner" id="err"></div>
     </div>
   </section>
 
   <!-- Karte und Ergebnisse -->
   <section>
+    <p class="question">Wie viele <span>Fahrer</span> kostet eine neue Expresslinie wirklich?</p>
     <div id="map"></div>
     <div class="kpis" id="kpis">
-      <div class="kpi"><div class="lab">Zusätzliche Fahrer: Expresslinie getrennt geplant</div><div class="val">–</div><div class="det">eigene Busse, eigene Dienste</div></div>
-      <div class="kpi"><div class="lab">Zusätzliche Fahrer: integriert optimiert</div><div class="val">–</div><div class="det">gegenüber gleich optimiertem Bestand</div></div>
-      <div class="kpi"><div class="lab">Zusätzliche Fahrer: + Parallellinien ausgedünnt</div><div class="val">–</div><div class="det">Hebel „Parallellinien ausdünnen“ aktivieren</div></div>
+      <div class="kpi" title="Expresslinie mit eigenen Bussen und eigenen Diensten"><div class="lab">🚌 Allein geplant</div><div class="val">–</div><div class="det">extra Fahrer</div></div>
+      <div class="kpi" title="Expresslinie zusammen mit dem Bestand optimiert (gegenüber gleich optimiertem Bestand)"><div class="lab">🧩 Mit Bestand verzahnt</div><div class="val">–</div><div class="det">extra Fahrer</div></div>
+      <div class="kpi" title="Zusätzlich parallele Linien in der Nebenverkehrszeit ausgedünnt"><div class="lab">✂️ Plus Ausdünnen</div><div class="val">–</div><div class="det">Stellschraube ✂️ einschalten</div></div>
     </div>
     <div class="charts">
-      <div class="card"><h2>Fahrerbedarf je Schritt</h2><div class="chartbox"><canvas id="cSteps"></canvas></div></div>
-      <div class="card"><h2>Fahrer am Steuer über den Tag</h2><div class="chartbox"><canvas id="cProfile"></canvas></div></div>
+      <div class="card"><h2>Fahrer: heute → Szenario</h2><div class="chartbox"><canvas id="cSteps"></canvas></div></div>
+      <div class="card"><h2>Fahrer im Einsatz über den Tag</h2><div class="chartbox"><canvas id="cProfile"></canvas></div></div>
     </div>
     <div class="card" style="margin-top:var(--gap)">
-      <h2>Treppe: vom heutigen Betrieb zum Szenario</h2>
-      <div class="tablewrap" id="table"><div class="empty">Expresslinie wählen und „Szenario rechnen“ klicken.</div></div>
-      <div class="note" id="note"></div>
+      <details class="more">
+        <summary>Alle Zahlen anzeigen</summary>
+        <div class="tablewrap" id="table" style="margin-top:10px"><div class="empty">Linie wählen und „Fahrer berechnen“ klicken.</div></div>
+        <div class="note" id="note"></div>
+      </details>
     </div>
   </section>
 
   <!-- Claude -->
   <aside class="card" id="chat">
-    <h2>Claude fragen</h2>
+    <h2>💬 Claude fragen</h2>
     <div class="chips" id="chips">
-      <button>Was kostet X30 an Fahrern, und wie bekommen wir das mit dem vorhandenen Personal hin?</button>
-      <button>Welche Expresslinie bringt am meisten Angebot pro zusätzlichem Fahrer?</button>
-      <button>Lohnt sich ein Express nur in der Hauptverkehrszeit?</button>
+      <button data-q="Was kostet X30 an Fahrern, und wie bekommen wir das mit dem vorhandenen Personal hin?">💶 Was kostet X30?</button>
+      <button data-q="Welche Expresslinie bringt am meisten Angebot pro zusätzlichem Fahrer?">🏆 Welche Linie lohnt sich?</button>
+      <button data-q="Lohnt sich ein Express nur in der Hauptverkehrszeit?">⏰ Nur zur Stoßzeit?</button>
     </div>
     <div id="msgs"></div>
     <form id="chatform">
@@ -199,6 +207,7 @@ const CUSTOM_COLOR = "#f59e0b";  // eigene Expresslinie
 const colorFor = (name) => { const i = presets.findIndex(p => p.name === name); return i < 0 ? CUSTOM_COLOR : COLORS[i % COLORS.length]; };
 const PERIODS = { day: [["06:00", "20:00"]], hvz: [["06:00", "09:00"], ["15:00", "19:00"]], long: [["05:00", "23:00"]] };
 const $ = (id) => document.getElementById(id);
+const short = (n) => n.replace(/^Nürnb(erg|\.)?,?\s*/, "");
 const fmt = (v, d = 0) => v == null ? "–" : Number(v).toLocaleString("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d });
 const sign = (v, d = 0) => (v > 0 ? "+" : v < 0 ? "−" : "±") + fmt(Math.abs(v), d);
 
@@ -238,11 +247,12 @@ function drawExpress(lines) {
 // ---------- Stammdaten
 fetch("/api/meta").then(r => r.json()).then(m => {
   presets = m.presets;
-  $("sub").textContent = `${m.meta.scope} · Stichtag ${m.meta.service_day.replace(/(\d{4})(\d\d)(\d\d)/, "$3.$2.$1")} · ${fmt(m.meta.trips)} Fahrten, ${m.meta.lines} Linien · Quelle: VGN GTFS, CC BY 3.0 DE`;
+  $("sub").textContent = `${fmt(m.meta.trips)} Fahrten · ${m.meta.lines} Linien · ${m.meta.service_day.replace(/(\d{4})(\d\d)(\d\d)/, "$3.$2.$1")} · Daten: VGN`;
+  $("sub").title = `${m.meta.scope} · Stichtag ${m.meta.service_day.replace(/(\d{4})(\d\d)(\d\d)/, "$3.$2.$1")} · ${fmt(m.meta.trips)} Fahrten, ${m.meta.lines} Linien · Quelle: VGN GTFS, CC BY 3.0 DE`;
   $("presets").innerHTML = presets.map((p, i) => `
-    <label class="preset" style="--c:${COLORS[i % COLORS.length]}"><input type="checkbox" value="${p.name}" ${i === 1 ? "checked" : ""}>
-      <b><span class="swatch" style="background:${COLORS[i % COLORS.length]}"></span>${p.name} · alle ${p.headway} min · ${p.info.fahrzeit_min} min Fahrzeit</b>
-      <small>${p.description}</small></label>`).join("");
+    <label class="preset" title="${p.description}" style="--c:${COLORS[i % COLORS.length]}"><input type="checkbox" value="${p.name}" ${i === 1 ? "checked" : ""}>
+      <b><span class="swatch" style="background:${COLORS[i % COLORS.length]}"></span>${p.name} · alle ${p.headway} min</b>
+      <small>${short(p.info.stations[0].name)} → ${short(p.info.stations[p.info.stations.length - 1].name)} · ${Math.round(p.info.fahrzeit_min)} min</small></label>`).join("");
   $("presets").addEventListener("change", previewSelection);
   $("stopNames").innerHTML = m.stop_names.map(n => `<option value="${n}">`).join("");
   $("claudeStatus").textContent = m.claude ? "Claude: verbunden" : "Claude: kein API-Key";
@@ -305,14 +315,14 @@ function render(res) {
   $("kpis").querySelectorAll(".kpi").forEach((el, i) => {
     const c = cards[i];
     el.classList.toggle("best", c != null && vals[i] === best && cards.filter(Boolean).length > 1);
-    el.querySelector(".val").textContent = c ? sign(c.delta.fahrer_bedarf, 0) : "–";
+    el.querySelector(".val").innerHTML = c ? `${sign(c.delta.fahrer_bedarf, 0)}<small>Fahrer</small>` : "–";
     if (c) el.querySelector(".det").textContent =
-      `${sign(c.delta.dienste)} Dienste · ${sign(c.delta.fahrzeuge)} Busse · ${sign(c.delta.fahrplan_km)} Fahrplan-km`;
+      `${sign(c.delta.dienste)} Dienste · ${sign(c.delta.fahrzeuge)} Busse`;
   });
 
   // Treppe
   const steps = res.steps;
-  const rows = steps.map(s => `<tr><td><b>${s.schritt}</b><br><small style="color:var(--muted)">${s.erklaerung}</small></td>
+  const rows = steps.map(s => `<tr title="${s.erklaerung}"><td><b>${s.schritt}</b></td>
     <td>${fmt(s.kpi.fahrplan_km)}<span class="d">${s.delta.fahrplan_km ? sign(s.delta.fahrplan_km) : ""}</span></td>
     <td>${fmt(s.kpi.fahrzeuge)}<span class="d">${s.delta.fahrzeuge ? sign(s.delta.fahrzeuge) : ""}</span></td>
     <td>${fmt(s.kpi.dienste)}<span class="d">${s.delta.dienste ? sign(s.delta.dienste) : ""}</span></td>
@@ -363,7 +373,7 @@ function addMsg(text, cls) {
 async function ask(q) {
   if (!q.trim()) return;
   addMsg(q, "user");
-  const wait = addMsg("Claude denkt nach und rechnet ggf. Szenarien …", "bot");
+  const wait = addMsg("Claude rechnet …", "bot");
   $("chatBtn").disabled = true;
   try {
     const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: chatSession, message: q }) });
@@ -378,7 +388,7 @@ async function ask(q) {
 }
 $("chatform").onsubmit = (e) => { e.preventDefault(); const q = $("chatIn").value; $("chatIn").value = ""; ask(q); };
 $("chatIn").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("chatform").requestSubmit(); } });
-$("chips").addEventListener("click", e => { if (e.target.tagName === "BUTTON") ask(e.target.textContent); });
+$("chips").addEventListener("click", e => { if (e.target.tagName === "BUTTON") ask(e.target.dataset.q || e.target.textContent); });
 </script>
 </body>
 </html>
