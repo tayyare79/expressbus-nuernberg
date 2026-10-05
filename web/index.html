@@ -313,6 +313,15 @@ function render(res) {
 }
 
 // ---------- Chat
+// Minimales Markdown für Claude-Antworten: erst HTML escapen, dann **fett**, `code` und Aufzählungen
+function md(text) {
+  const esc = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return esc
+    .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/^[-*] /gm, "• ")
+    .replace(/^#{1,4} (.+)$/gm, "<b>$1</b>");
+}
 function addMsg(text, cls) {
   const d = document.createElement("div");
   d.className = "msg " + cls; d.textContent = text;
@@ -329,7 +338,7 @@ async function ask(q) {
     const j = await r.json();
     if (!r.ok) throw new Error(j.detail || "Fehler");
     chatSession = j.session_id;
-    wait.textContent = j.answer;
+    wait.innerHTML = md(j.answer);
     if (j.scenario) render(j.scenario);
   } catch (e) {
     wait.className = "msg err"; wait.textContent = e.message;
