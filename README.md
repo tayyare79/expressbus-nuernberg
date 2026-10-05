@@ -1,5 +1,7 @@
 # Expressbusse trotz Fahrermangel
 
+![Demo: Karte mit Expresslinie X30, zusätzliche Fahrer je Planungsschritt, Fahrer am Steuer über den Tag und Claude-Chat](docs/screenshot.png)
+
 Prototyp für das **Claude Code Impact Lab Nürnberg** (Hackathon #2, 05.10.2026, Fraunhofer IIS), Track 1:
 Nürnberg hat genug Busse für zusätzliche Expresslinien, aber zu wenige Fahrer. Wie bekommt man neue Expresslinien
 mit möglichst wenig zusätzlichem Personal auf die Straße?
@@ -7,6 +9,14 @@ mit möglichst wenig zusätzlichem Personal auf die Straße?
 **Idee:** Eine Expresslinie kostet nicht „Fahrzeit × Fahrer“. Wenn man sie *zusammen mit dem Bestand* plant,
 füllt sie Lücken in vorhandenen Umläufen und Diensten. Der Prototyp rechnet das für den echten VAG-Busfahrplan durch
 und zeigt, wie viele Fahrer eine Expresslinie wirklich zusätzlich kostet, und welche Hebel diese Zahl drücken.
+
+> **In English:** Prototype for the Claude Code Impact Lab Nuremberg (hackathon, 5 Oct 2026, Fraunhofer IIS), Track 1
+> “Express buses despite a driver shortage”. Using the real VAG city bus timetable (VGN GTFS, 4,854 trips, 53 lines),
+> it plans vehicle blocks (min-cost flow) and driver duties (CP-SAT, OR-Tools) and shows how many extra drivers a new
+> express line really needs when it is planned *together with* the existing network. Example X30: 31 extra drivers if
+> planned separately, 19 when integrated, 12 with thinned-out parallel lines off-peak. Claude (Opus 5.5) acts as a
+> scenario assistant that runs the optimiser via tool calls and explains the results. Run it with
+> `uv sync && uv run uvicorn expressbus.api:app --port 8000`.
 
 ## Schnellstart
 

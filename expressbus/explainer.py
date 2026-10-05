@@ -73,7 +73,12 @@ TOOLS = [
                         "properties": {
                             "name": {"type": "string"},
                             "stops": {"type": "array", "items": {"type": "string"}, "minItems": 2},
-                            "headway": {"type": "integer", "description": "Takt in Minuten"},
+                            "headway": {
+                                "type": "integer",
+                                "minimum": scenario.HEADWAY_MIN,
+                                "maximum": scenario.HEADWAY_MAX,
+                                "description": "Takt in Minuten",
+                            },
                             "periods": {
                                 "type": "array",
                                 "items": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2},

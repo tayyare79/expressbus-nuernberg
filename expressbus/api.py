@@ -71,7 +71,7 @@ def network():
 class ExpressIn(BaseModel):
     name: str
     stops: list[str] = Field(min_length=2)
-    headway: int = 20
+    headway: int = Field(20, ge=scenario.HEADWAY_MIN, le=scenario.HEADWAY_MAX)
     periods: list[tuple[str, str]] = [("06:00", "20:00")]
 
 

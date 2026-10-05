@@ -22,6 +22,7 @@ from .scheduling import Params, Result, attach_coords, plan, profile
 
 SKIP_SAVING_MIN = 0.6  # gesparte Zeit je ausgelassener Haltestelle (Bremsen, Halt, Anfahren)
 FALLBACK_SPEED_KMH = 22.0
+HEADWAY_MIN, HEADWAY_MAX = 5, 120  # erlaubter Takt in Minuten (0 oder negativ würde endlos Fahrten erzeugen)
 
 
 @dataclass
@@ -124,6 +125,8 @@ def segment_time(a: pd.Series, b: pd.Series) -> tuple[float, str]:
 
 
 def build_express(x: ExpressLine) -> tuple[pd.DataFrame, dict]:
+    if not HEADWAY_MIN <= x.headway <= HEADWAY_MAX:
+        raise ValueError(f"{x.name}: Takt {x.headway} min ungültig, erlaubt sind {HEADWAY_MIN}–{HEADWAY_MAX} min.")
     stations = [resolve_station(s) for s in x.stops]
     segs = [segment_time(a, b) for a, b in zip(stations[:-1], stations[1:])]
     seg_t = np.array([s[0] for s in segs])
